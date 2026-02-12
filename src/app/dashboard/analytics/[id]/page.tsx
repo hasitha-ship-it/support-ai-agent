@@ -37,6 +37,9 @@ import {
     Star,
     ChevronDown,
     ChevronRight,
+    AlertTriangle,
+    ExternalLink,
+    Heart,
 } from "lucide-react";
 
 // Sidebar navigation items
@@ -144,9 +147,32 @@ export default function AnalyticsPage() {
         { id: 6, query: "How to add team members?", frequency: 4, lastAsked: "5 hours ago", priority: "low" },
     ];
 
+    // Feedback data for sentiment filtering
+    const feedbackData = {
+        Positive: [
+            { id: 1, message: "Amazing bot! Solved my issue instantly.", topic: "Support", time: "5 mins ago", emoji: "🟢" },
+            { id: 2, message: "Love the quick responses, very helpful!", topic: "Performance", time: "12 mins ago", emoji: "🟢" },
+            { id: 3, message: "Best customer service bot I've used.", topic: "General", time: "1 hour ago", emoji: "🟢" },
+            { id: 4, message: "Pricing is fair and the bot works great!", topic: "Billing", time: "2 hours ago", emoji: "🟢" },
+        ],
+        Neutral: [
+            { id: 5, message: "It works, but could be faster.", topic: "Performance", time: "8 mins ago", emoji: "🟡" },
+            { id: 6, message: "Decent bot, nothing special.", topic: "General", time: "25 mins ago", emoji: "🟡" },
+            { id: 7, message: "Got my answer eventually.", topic: "Support", time: "1 hour ago", emoji: "🟡" },
+        ],
+        Negative: [
+            { id: 8, message: "This bot is useless, I need a human!", topic: "Support", time: "2 mins ago", emoji: "🔴" },
+            { id: 9, message: "Couldn't understand my question at all.", topic: "General", time: "15 mins ago", emoji: "🔴" },
+            { id: 10, message: "Waste of time, very frustrating.", topic: "Support", time: "45 mins ago", emoji: "🔴" },
+        ],
+    };
+
     // Training popup state
     const [trainingPopup, setTrainingPopup] = React.useState<{ query: string; id: number } | null>(null);
     const [trainingAnswer, setTrainingAnswer] = React.useState("");
+
+    // Selected sentiment state
+    const [selectedSentiment, setSelectedSentiment] = React.useState<"Positive" | "Neutral" | "Negative">("Negative");
 
     const maxHeatmapValue = Math.max(...heatmapData.flatMap(d => d.hours));
 
@@ -199,8 +225,8 @@ export default function AnalyticsPage() {
                                                 }
                                             }}
                                             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${item.active
-                                                    ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30"
-                                                    : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                                                ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30"
+                                                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
                                                 }`}
                                         >
                                             <item.icon className="h-5 w-5 shrink-0" />
@@ -224,8 +250,8 @@ export default function AnalyticsPage() {
                                                         key={agent.id}
                                                         onClick={() => router.push(`/dashboard/analytics/${agent.id}`)}
                                                         className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all ${agent.active
-                                                                ? "bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-300"
-                                                                : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800/50"
+                                                            ? "bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-300"
+                                                            : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800/50"
                                                             }`}
                                                     >
                                                         <div
@@ -247,8 +273,8 @@ export default function AnalyticsPage() {
                                     key={item.label}
                                     onClick={() => router.push(item.href)}
                                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${item.active
-                                            ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30"
-                                            : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                                        ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30"
+                                        : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
                                         }`}
                                 >
                                     <item.icon className="h-5 w-5 shrink-0" />
@@ -471,7 +497,7 @@ export default function AnalyticsPage() {
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 {/* Actions Triggered */}
                                 <div className="rounded-2xl border border-zinc-200/50 bg-white/80 p-6 backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-900/80">
-                                    <div className="mb-4 flex items-center justify-between">
+                                    <div className="mb-6 flex items-center justify-between">
                                         <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
                                             Actions Triggered
                                         </h3>
@@ -479,34 +505,122 @@ export default function AnalyticsPage() {
                                             <Zap className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                                         </div>
                                     </div>
-                                    <p className="text-5xl font-bold text-zinc-900 dark:text-zinc-100">150</p>
-                                    <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                                        Total skills used
-                                    </p>
 
-                                    <div className="mt-6 space-y-3">
-                                        {actionBreakdown.map((action) => (
-                                            <div key={action.name}>
-                                                <div className="mb-1.5 flex items-center justify-between text-sm">
-                                                    <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                                                        {action.name}
-                                                    </span>
-                                                    <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                                    {/* Side-by-side Layout: Pie Chart (Left) + Legend (Right) */}
+                                    <div className="flex items-center gap-8">
+                                        {/* Pie Chart - Left Side */}
+                                        <div className="flex-shrink-0">
+                                            <div className="relative" style={{ width: '280px', height: '280px' }}>
+                                                <svg viewBox="0 0 200 200" className="transform -rotate-90">
+                                                    {(() => {
+                                                        let currentAngle = 0;
+                                                        return actionBreakdown.map((action, index) => {
+                                                            const percentage = action.value;
+                                                            const angle = (percentage / 100) * 360;
+                                                            const startAngle = currentAngle;
+                                                            const endAngle = currentAngle + angle;
+                                                            currentAngle = endAngle;
+
+                                                            // Convert angles to radians
+                                                            const startRad = (startAngle * Math.PI) / 180;
+                                                            const endRad = (endAngle * Math.PI) / 180;
+
+                                                            // Calculate arc path
+                                                            const radius = 80;
+                                                            const centerX = 100;
+                                                            const centerY = 100;
+
+                                                            const x1 = centerX + radius * Math.cos(startRad);
+                                                            const y1 = centerY + radius * Math.sin(startRad);
+                                                            const x2 = centerX + radius * Math.cos(endRad);
+                                                            const y2 = centerY + radius * Math.sin(endRad);
+
+                                                            const largeArcFlag = angle > 180 ? 1 : 0;
+
+                                                            const pathData = [
+                                                                `M ${centerX} ${centerY}`,
+                                                                `L ${x1} ${y1}`,
+                                                                `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                                                                'Z'
+                                                            ].join(' ');
+
+                                                            return (
+                                                                <path
+                                                                    key={action.name}
+                                                                    d={pathData}
+                                                                    fill={action.color}
+                                                                    className="transition-all duration-300 hover:opacity-80 hover:scale-105 cursor-pointer"
+                                                                    style={{
+                                                                        transformOrigin: '100px 100px',
+                                                                        animation: `fadeIn 0.6s ease-out ${index * 0.1}s both`
+                                                                    }}
+                                                                />
+                                                            );
+                                                        });
+                                                    })()}
+                                                </svg>
+
+                                                {/* Center Text */}
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                    <p className="text-5xl font-bold bg-gradient-to-br from-violet-600 to-purple-600 bg-clip-text text-transparent dark:from-violet-400 dark:to-purple-400">150</p>
+                                                    <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mt-2 tracking-wide uppercase">Total Actions</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Legend - Right Side */}
+                                        <div className="flex-1 space-y-4">
+                                            {actionBreakdown.map((action, index) => (
+                                                <div
+                                                    key={action.name}
+                                                    className="group flex items-center justify-between p-3 rounded-xl transition-all duration-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer"
+                                                    style={{
+                                                        animation: `slideInRight 0.6s ease-out ${index * 0.1}s both`
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div
+                                                            className="h-4 w-4 rounded-full shadow-lg transition-transform duration-300 group-hover:scale-110"
+                                                            style={{
+                                                                backgroundColor: action.color,
+                                                                boxShadow: `0 4px 12px ${action.color}40`
+                                                            }}
+                                                        />
+                                                        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                                                            {action.name}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                                                         {action.value}%
                                                     </span>
                                                 </div>
-                                                <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                                                    <div
-                                                        className="h-full rounded-full transition-all"
-                                                        style={{
-                                                            width: `${action.value}%`,
-                                                            backgroundColor: action.color,
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
+
+                                    <style jsx>{`
+                                        @keyframes fadeIn {
+                                            from {
+                                                opacity: 0;
+                                                transform: scale(0.8);
+                                            }
+                                            to {
+                                                opacity: 1;
+                                                transform: scale(1);
+                                            }
+                                        }
+                                        
+                                        @keyframes slideInRight {
+                                            from {
+                                                opacity: 0;
+                                                transform: translateX(20px);
+                                            }
+                                            to {
+                                                opacity: 1;
+                                                transform: translateX(0);
+                                            }
+                                        }
+                                    `}</style>
                                 </div>
 
                                 {/* Success vs Failure */}
@@ -576,14 +690,21 @@ export default function AnalyticsPage() {
                                         User Sentiment
                                     </h3>
 
-                                    {/* Sentiment Breakdown */}
+                                    {/* Sentiment Breakdown - Interactive */}
                                     <div className="mb-6 space-y-4">
                                         {sentimentData.map((sentiment) => (
-                                            <div key={sentiment.label}>
+                                            <div
+                                                key={sentiment.label}
+                                                onClick={() => setSelectedSentiment(sentiment.label as "Positive" | "Neutral" | "Negative")}
+                                                className={`cursor-pointer rounded-xl p-3 transition-all duration-300 ${selectedSentiment === sentiment.label
+                                                    ? 'bg-zinc-50 dark:bg-zinc-800/50 ring-2 ring-offset-2'
+                                                    : 'hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30'
+                                                    }`}
+                                            >
                                                 <div className="mb-2 flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-2xl">{sentiment.emoji}</span>
-                                                        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                                        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                                                             {sentiment.label}
                                                         </span>
                                                     </div>
@@ -591,12 +712,14 @@ export default function AnalyticsPage() {
                                                         {sentiment.value}%
                                                     </span>
                                                 </div>
-                                                <div className="h-3 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                                                <div className="relative h-3 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
                                                     <div
-                                                        className="h-full rounded-full transition-all"
+                                                        className={`h-full rounded-full transition-all duration-500 ${selectedSentiment === sentiment.label ? 'shadow-lg' : ''
+                                                            }`}
                                                         style={{
                                                             width: `${sentiment.value}%`,
                                                             backgroundColor: sentiment.color,
+                                                            boxShadow: selectedSentiment === sentiment.label ? `0 0 20px ${sentiment.color}80` : 'none'
                                                         }}
                                                     />
                                                 </div>
@@ -668,36 +791,225 @@ export default function AnalyticsPage() {
                                     </div>
                                 </div>
 
-                                {/* Top Topics */}
+                                {/* Dynamic Feedback Stream */}
                                 <div className="rounded-2xl border border-zinc-200/50 bg-white/80 p-6 backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-900/80">
-                                    <h3 className="mb-5 text-base font-bold text-zinc-900 dark:text-zinc-100">
-                                        Top User Topics
-                                    </h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {topTopics.map((topic) => {
-                                            const maxCount = Math.max(...topTopics.map(t => t.count));
-                                            const size = 12 + (topic.count / maxCount) * 12;
+                                    <div className="mb-5 flex items-center justify-between">
+                                        <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                                            {selectedSentiment === "Positive" && "🟢 Positive Feedback"}
+                                            {selectedSentiment === "Neutral" && "🟡 Neutral Feedback"}
+                                            {selectedSentiment === "Negative" && "🔴 Negative Feedback"}
+                                        </h3>
+                                        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                                            Last 24h
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {feedbackData[selectedSentiment].map((feedback, index) => (
+                                            <div
+                                                key={feedback.id}
+                                                className="group rounded-xl border border-zinc-100 bg-zinc-50/50 p-4 transition-all duration-300 hover:border-zinc-200 hover:bg-white hover:shadow-md dark:border-zinc-800 dark:bg-zinc-800/30 dark:hover:border-zinc-700 dark:hover:bg-zinc-800/50"
+                                                style={{
+                                                    animation: `feedSlideIn 0.4s ease-out ${index * 0.1}s both`
+                                                }}
+                                            >
+                                                <div className="mb-2 flex items-start gap-3">
+                                                    <span className="text-xl">{feedback.emoji}</span>
+                                                    <p className="flex-1 text-sm font-medium leading-relaxed text-zinc-800 dark:text-zinc-200">
+                                                        "{feedback.message}"
+                                                    </p>
+                                                </div>
+                                                <div className="ml-8 flex items-center justify-between">
+                                                    <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+                                                        <span className="font-medium">Topic: {feedback.topic}</span>
+                                                        <span>•</span>
+                                                        <span>Time: {feedback.time}</span>
+                                                    </div>
+                                                    <button className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-violet-600 opacity-0 transition-all duration-300 hover:bg-violet-50 group-hover:opacity-100 dark:text-violet-400 dark:hover:bg-violet-900/20">
+                                                        View Chat
+                                                        <ChevronRight className="h-3 w-3" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-5 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+                                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                                            💡 Click on sentiment bars to filter feedback
+                                        </p>
+                                    </div>
+
+                                    <style jsx>{`
+                                        @keyframes feedSlideIn {
+                                            from {
+                                                opacity: 0;
+                                                transform: translateY(10px);
+                                            }
+                                            to {
+                                                opacity: 1;
+                                                transform: translateY(0);
+                                            }
+                                        }
+                                    `}</style>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Conversation Insights Section */}
+                    <div className="scroll-mt-24">
+                        <div className="space-y-6">
+                            <div>
+                                <h2 className="mb-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                                    🧠 Conversation Insights
+                                </h2>
+                                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                    What are users talking about and where are the gaps?
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                {/* LEFT CARD: Trending Topics */}
+                                <div className="rounded-2xl border border-zinc-200/50 bg-white/80 p-6 backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-900/80">
+                                    <div className="mb-6 flex items-center gap-2">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: '#332532' }}>
+                                            <TrendingUp className="h-4 w-4 text-white" />
+                                        </div>
+                                        <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                                            🔥 Trending Topics
+                                        </h3>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {[
+                                            { emoji: '💳', name: 'Pricing & Billing', count: 120 },
+                                            { emoji: '🔌', name: 'API Integration', count: 85 },
+                                            { emoji: '🐞', name: 'Bugs', count: 40 },
+                                        ].map((topic, index) => {
+                                            const maxCount = 120;
+                                            const barWidth = (topic.count / maxCount) * 100;
                                             return (
                                                 <div
-                                                    key={topic.word}
-                                                    className="rounded-lg bg-violet-100 px-3 py-2 dark:bg-violet-900/30"
-                                                    style={{ fontSize: `${size}px` }}
+                                                    key={topic.name}
+                                                    className="group relative overflow-hidden rounded-xl border border-zinc-100 bg-zinc-50/50 p-4 transition-all duration-300 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-800/30 dark:hover:bg-zinc-800/50 cursor-pointer"
+                                                    style={{
+                                                        animation: `topicSlideIn 0.5s ease-out ${index * 0.12}s both`
+                                                    }}
                                                 >
-                                                    <span className="font-bold text-violet-700 dark:text-violet-300">
-                                                        {topic.word}
-                                                    </span>
-                                                    <span className="ml-1.5 text-[10px] text-violet-500 dark:text-violet-400">
-                                                        {topic.count}
-                                                    </span>
+                                                    {/* Progress bar background */}
+                                                    <div
+                                                        className="absolute inset-y-0 left-0 rounded-xl opacity-10 transition-all duration-500 group-hover:opacity-20"
+                                                        style={{
+                                                            width: `${barWidth}%`,
+                                                            backgroundColor: '#332532'
+                                                        }}
+                                                    />
+
+                                                    <div className="relative flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-2xl">{topic.emoji}</span>
+                                                            <div>
+                                                                <p className="font-semibold text-zinc-800 dark:text-zinc-200">
+                                                                    {topic.name}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-white shadow-md" style={{ backgroundColor: '#332532' }}>
+                                                                <MessageSquare className="h-3 w-3" />
+                                                                {topic.count} Chats
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                    <div className="mt-5 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
-                                        <p className="text-xs text-blue-700 dark:text-blue-300">
-                                            💡 Use these insights to improve your Knowledge Base
-                                        </p>
+
+                                    <style jsx>{`
+                                        @keyframes topicSlideIn {
+                                            from {
+                                                opacity: 0;
+                                                transform: translateY(16px);
+                                            }
+                                            to {
+                                                opacity: 1;
+                                                transform: translateY(0);
+                                            }
+                                        }
+                                    `}</style>
+                                </div>
+
+                                {/* RIGHT CARD: Knowledge Gaps Overview */}
+                                <div className="rounded-2xl border border-zinc-200/50 bg-white/80 p-6 backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-900/80">
+                                    <div className="mb-6 flex items-center gap-2">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                                            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                                            ⚠️ Knowledge Gaps Overview
+                                        </h3>
                                     </div>
+
+                                    <div className="space-y-2">
+                                        {knowledgeGaps.slice(0, 5).map((gap, index) => (
+                                            <div
+                                                key={gap.id}
+                                                className="group flex items-start gap-3 rounded-xl border border-transparent p-3 transition-all duration-300 hover:border-amber-200 hover:bg-amber-50/50 dark:hover:border-amber-800/50 dark:hover:bg-amber-900/10 cursor-pointer"
+                                                style={{
+                                                    animation: `gapSlideIn 0.5s ease-out ${index * 0.1}s both`
+                                                }}
+                                            >
+                                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 mt-0.5">
+                                                    {index + 1}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 leading-relaxed">
+                                                        "{gap.query}"
+                                                    </p>
+                                                    <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                                        Missed {gap.frequency} times
+                                                    </p>
+                                                </div>
+                                                <div className="shrink-0 mt-0.5">
+                                                    {gap.frequency >= 10 && (
+                                                        <Flame className="h-4 w-4 text-orange-500" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Train Link */}
+                                    <div className="mt-5 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                                        <a
+                                            href="#"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                // Navigate to knowledge base training
+                                            }}
+                                            className="group/link flex items-center gap-2 text-sm font-semibold transition-all duration-300 hover:gap-3"
+                                            style={{ color: '#332532' }}
+                                        >
+                                            Go to Knowledge Base to Train
+                                            <ExternalLink className="h-4 w-4 transition-transform duration-300 group-hover/link:translate-x-0.5" />
+                                            ➔
+                                        </a>
+                                    </div>
+
+                                    <style jsx>{`
+                                        @keyframes gapSlideIn {
+                                            from {
+                                                opacity: 0;
+                                                transform: translateX(16px);
+                                            }
+                                            to {
+                                                opacity: 1;
+                                                transform: translateX(0);
+                                            }
+                                        }
+                                    `}</style>
                                 </div>
                             </div>
                         </div>
@@ -804,127 +1116,7 @@ export default function AnalyticsPage() {
                         </div>
                     </div>
 
-                    {/* Knowledge Training Center Section */}
-                    <div className="scroll-mt-24">
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h2 className="mb-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                                        🧠 Knowledge Training Center
-                                    </h2>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                        Train your bot on missed queries to improve accuracy
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-2 rounded-lg bg-violet-50 px-3 py-2 dark:bg-violet-900/20">
-                                    <Flame className="h-4 w-4 text-orange-500" />
-                                    <span className="text-sm font-semibold text-violet-900 dark:text-violet-300">
-                                        {knowledgeGaps.length} gaps detected
-                                    </span>
-                                </div>
-                            </div>
 
-                            {/* Action Table */}
-                            <div className="overflow-hidden rounded-2xl border border-zinc-200/50 bg-white/80 backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-900/80">
-                                {/* Table Header */}
-                                <div className="border-b border-zinc-200 bg-zinc-50/50 px-6 py-3 dark:border-zinc-800 dark:bg-zinc-800/50">
-                                    <div className="grid grid-cols-12 gap-4">
-                                        <div className="col-span-5">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                                                Missed Query
-                                            </span>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                                                Frequency
-                                            </span>
-                                        </div>
-                                        <div className="col-span-3">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                                                Last Asked
-                                            </span>
-                                        </div>
-                                        <div className="col-span-2 text-right">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                                                Action
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Table Body */}
-                                <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                                    {knowledgeGaps.map((gap) => (
-                                        <div
-                                            key={gap.id}
-                                            className="grid grid-cols-12 gap-4 px-6 py-4 transition-all hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30"
-                                        >
-                                            {/* Query */}
-                                            <div className="col-span-5 flex items-center">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
-                                                        <MessageSquare className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
-                                                    </div>
-                                                    <span className="text-sm font-medium leading-relaxed text-zinc-900 dark:text-zinc-100">
-                                                        {gap.query}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Frequency */}
-                                            <div className="col-span-2 flex items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                                                        {gap.frequency}
-                                                    </span>
-                                                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                                                        Times
-                                                    </span>
-                                                    {gap.frequency >= 10 && (
-                                                        <Flame className="h-4 w-4 text-orange-500" />
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Last Asked */}
-                                            <div className="col-span-3 flex items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="h-4 w-4 text-zinc-400" />
-                                                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                                                        {gap.lastAsked}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Action Button */}
-                                            <div className="col-span-2 flex items-center justify-end">
-                                                <button
-                                                    onClick={() => {
-                                                        setTrainingPopup({ query: gap.query, id: gap.id });
-                                                        setTrainingAnswer("");
-                                                    }}
-                                                    className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-500/30 transition-all hover:shadow-xl hover:shadow-violet-500/40"
-                                                >
-                                                    <Plus className="h-4 w-4" />
-                                                    Train
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Empty State (if no gaps) */}
-                                {knowledgeGaps.length === 0 && (
-                                    <div className="px-6 py-12 text-center">
-                                        <BookOpen className="mx-auto mb-3 h-12 w-12 text-zinc-300 dark:text-zinc-700" />
-                                        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                                            No knowledge gaps detected. Your bot is well trained! 🎉
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Training Popup Modal */}
