@@ -257,7 +257,7 @@ export default function DashboardPage() {
                         {deployedAgents.map((agent) => (
                             <div
                                 key={agent.id}
-                                onClick={() => router.push(`/dashboard/analytics/${agent.id}`)}
+                                onClick={() => router.push(`/dashboard/configure/${agent.id}`)}
                                 className="group relative overflow-hidden rounded-2xl border border-zinc-200/50 bg-white/80 backdrop-blur-sm transition-all hover:shadow-xl hover:shadow-violet-500/10 dark:border-zinc-800/50 dark:bg-zinc-900/80 cursor-pointer"
                             >
                                 {/* Card Header */}
