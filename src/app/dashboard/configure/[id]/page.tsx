@@ -45,6 +45,7 @@ import {
 import { Sidebar, useSidebarState } from "@/components/sidebar";
 import Image from "next/image";
 import { AIModel, aiModels, toneOptions } from "./models";
+import { ChatWidget } from "@/components/ChatWidget";
 
 // Agent data
 const allAgents = [
@@ -1987,19 +1988,22 @@ export default function ConfigurePage() {
                         </div>
                     </div>
 
-                    {/* RIGHT - Preview Section */}
+                    {/* RIGHT - Live Chat Section */}
                     <div className="hidden shrink-0 flex-col bg-zinc-100/50 p-4 sm:p-6 lg:flex lg:w-2/5 xl:w-[40%] dark:bg-zinc-950/50">
                         <div className="mb-4 flex items-center justify-between">
                             <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                                Live Preview
+                                Live Chat Preview
                             </h3>
                             <span className="flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
                                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Real-time
+                                Live
                             </span>
                         </div>
-                        <div className="flex-1">
-                            <ChatPreview agent={currentAgent} />
+                        {/* Desktop chat widget container styled like ui-setup page */}
+                        <div className="flex flex-1 items-center justify-center">
+                            <div className="w-full max-w-sm" style={{ height: "calc(100vh - 200px)", maxHeight: "680px" }}>
+                                <ChatWidget className="h-full rounded-2xl border shadow-2xl" />
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -231,8 +231,12 @@ function buildContextString(chunks: string[]): string {
         "IMPORTANT INSTRUCTIONS FOR USING THIS CONTEXT:\n" +
         "1. Use ALL the information below when answering — do NOT summarize or skip details.\n" +
         "2. If the user asks about pricing or plans, list EVERY plan with its name, price, and ALL features.\n" +
-        "3. If the user asks about features or services, list ALL of them from the context.\n" +
-        "4. Format your response with clear headings, bullet points, and sections for easy reading.\n" +
+        "3. PRICING FORMAT — You MUST follow this exact format for each plan:\n" +
+        "   **[Plan Name]** – $[price]/mo\n" +
+        "   - [feature 1]\n" +
+        "   - [feature 2]\n" +
+        "   (repeat for every plan, do NOT skip any)\n" +
+        "4. If the user asks about features or services, list ALL of them from the context.\n" +
         "5. Never say you don't have information if the answer is present anywhere below.\n\n" +
         chunks.join("\n\n---\n") +
         "\n--- END OF KNOWLEDGE BASE CONTEXT ---\n"
@@ -315,11 +319,15 @@ export async function POST(req: NextRequest) {
                     botModelId = profile.ai_model ?? DEFAULT_MODEL_ID;
                     const COMPREHENSIVE_INSTRUCTIONS = [
                         "\n\nCRITICAL RESPONSE RULES:",
-                        "- When asked about pricing, plans, or packages: list EVERY plan by name with its exact price and ALL included features — never skip or summarize.",
+                        "- When asked about pricing, plans, or packages: list EVERY plan using this EXACT format:",
+                        "  **[Plan Name]** – $[price]/mo",
+                        "  - [feature 1]",
+                        "  - [feature 2]",
+                        "  (one bullet per feature, all features included, no markdown tables)",
+                        "- NEVER use markdown tables for pricing — always use the bold heading + dash-bullet format above.",
                         "- When asked about services or features: list ALL of them comprehensively.",
-                        "- Format all structured answers with clear headings, bullet points, and bold for key terms.",
                         "- Never truncate a list — always complete it fully.",
-                        "- If multiple plans have different prices/limits, show each one separately.",
+                        "- If a plan is Free, write: **[Plan Name]** – Free",
                     ].join("\n");
                     const savedPrompt = profile.system_prompt ?? botSystemPrompt;
                     botSystemPrompt = savedPrompt + COMPREHENSIVE_INSTRUCTIONS;

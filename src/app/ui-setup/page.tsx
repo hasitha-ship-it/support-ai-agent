@@ -13,8 +13,6 @@ import {
     MessageCircle,
     ChevronDown,
     Check,
-    Smartphone,
-    Monitor,
     Send,
     X,
     ImageIcon,
@@ -23,6 +21,7 @@ import { createClient } from "@supabase/supabase-js";
 import { ACTIONS_REGISTRY } from "@/lib/actions-definitions";
 import { DEFAULT_UI_CONFIG } from "@/lib/ui-config";
 import type { UiConfig } from "@/lib/ui-config";
+import { ChatWidget } from "@/components/ChatWidget";
 
 // Avatar Options
 const defaultAvatars = [
@@ -82,16 +81,6 @@ export default function UISetupPage() {
     // Dropdown states
     const [isAvatarOpen, setIsAvatarOpen] = React.useState(false);
     const [isActionSelectorOpen, setIsActionSelectorOpen] = React.useState(false);
-
-    // Preview Mode State - Desktop/Mobile toggle
-    const [previewMode, setPreviewMode] = React.useState<"desktop" | "mobile">("desktop");
-    // Launcher expanded/collapsed state
-    const [launcherExpanded, setLauncherExpanded] = React.useState(true);
-
-    // Chat simulation state
-    const [messages, setMessages] = React.useState<Array<{ role: "user" | "agent"; text: string; status?: string }>>([]);
-    const [isTyping, setIsTyping] = React.useState(false);
-    const [typingStatus, setTypingStatus] = React.useState("Typing...");
 
     // ── Save / Publish state ──────────────────────────────────────────────────
     const [isSaving, setIsSaving] = React.useState(false);
@@ -199,16 +188,6 @@ export default function UISetupPage() {
         setBrandLogoUrl(url);
     }
 
-    // Simulate agent typing
-    const simulateTyping = (status: string = "Typing...") => {
-        if (!showTypingIndicator) return;
-        setIsTyping(true);
-        setTypingStatus(status);
-        setTimeout(() => {
-            setIsTyping(false);
-        }, 2000);
-    };
-
     // ── Save / Publish handler ────────────────────────────────────────────────
     async function handlePublish(publishNow = false) {
         setIsSaving(true);
@@ -259,6 +238,23 @@ export default function UISetupPage() {
             setIsSaving(false);
         }
     }
+
+    // \u2500\u2500 Build live config from current form state \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const liveConfig = React.useMemo<Partial<UiConfig>>(() => ({
+        agentName,
+        primaryColor: themeColor,
+        themeMode,
+        avatar: selectedAvatar.image ?? selectedAvatar.emoji ?? "\ud83e\udd16",
+        launcherStyle,
+        brandLogoUrl: brandLogoUrl ?? undefined,
+        welcomeMessage,
+        quickActions: selectedActions,
+        showTypingIndicator,
+    }), [
+        agentName, themeColor, themeMode, selectedAvatar,
+        launcherStyle, brandLogoUrl, welcomeMessage, selectedActions, showTypingIndicator,
+    ]);
 
     return (
         <div className={`min-h-screen bg-zinc-50 dark:bg-zinc-950 ${gridClass}`}>
@@ -655,371 +651,43 @@ export default function UISetupPage() {
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN: Live Preview (55%) */}
-                <div className="relative flex w-[55%] flex-col items-center justify-center">
-                    {/* Preview Mode Toggle */}
-                    <div className="absolute top-8 flex items-center gap-2 rounded-xl border border-zinc-200 bg-white/80 p-1 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/80">
-                        <button
-                            onClick={() => setPreviewMode("desktop")}
-                            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${previewMode === "desktop"
-                                ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
-                                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-                                }`}
-                        >
-                            <Monitor className="h-4 w-4" />
-                            Desktop
-                        </button>
-                        <button
-                            onClick={() => setPreviewMode("mobile")}
-                            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${previewMode === "mobile"
-                                ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
-                                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-                                }`}
-                        >
-                            <Smartphone className="h-4 w-4" />
-                            Mobile
-                        </button>
+                {/* RIGHT COLUMN: Live Preview (55%) — real ChatWidget */}
+                <div className="relative flex w-[55%] flex-col items-center justify-center gap-3 py-8">
+                    {/* Header badge */}
+                    <div className="flex w-full max-w-sm items-center justify-between px-1">
+                        <span className="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                            Live Preview
+                        </span>
+                        <span className="flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Live
+                        </span>
                     </div>
 
-                    {/* Desktop Preview */}
-                    {previewMode === "desktop" && (
-                        <div className="relative mt-16">
-                            {/* Browser Mockup */}
-                            <div className="relative h-[520px] w-[720px] overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-950">
-                                {/* Browser Chrome */}
-                                <div className="flex h-10 items-center gap-2 border-b border-zinc-200 bg-zinc-100 px-4 dark:border-zinc-800 dark:bg-zinc-900">
-                                    <div className="flex gap-1.5">
-                                        <div className="h-3 w-3 rounded-full bg-red-400" />
-                                        <div className="h-3 w-3 rounded-full bg-yellow-400" />
-                                        <div className="h-3 w-3 rounded-full bg-green-400" />
-                                    </div>
-                                    <div className="flex-1 ml-4">
-                                        <div className="h-6 w-72 rounded-md bg-white/60 dark:bg-zinc-800 flex items-center px-3">
-                                            <span className="text-xs text-zinc-500">yoursite.com</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Website Content Background */}
-                                <div className={`relative h-[calc(100%-2.5rem)] bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950 ${activePreviewTheme === "dark" ? "dark" : ""}`}>
-                                    {/* Fake website content */}
-                                    <div className="p-6 space-y-4 opacity-40">
-                                        <div className="h-8 w-48 rounded bg-zinc-300 dark:bg-zinc-700" />
-                                        <div className="h-4 w-96 rounded bg-zinc-200 dark:bg-zinc-800" />
-                                        <div className="h-4 w-80 rounded bg-zinc-200 dark:bg-zinc-800" />
-                                        <div className="mt-6 grid grid-cols-3 gap-4">
-                                            <div className="h-24 rounded-lg bg-zinc-200 dark:bg-zinc-800" />
-                                            <div className="h-24 rounded-lg bg-zinc-200 dark:bg-zinc-800" />
-                                            <div className="h-24 rounded-lg bg-zinc-200 dark:bg-zinc-800" />
-                                        </div>
-                                    </div>
-
-                                    {/* Chat Widget (Expanded) */}
-                                    <div
-                                        className={`absolute bottom-4 right-4 w-[340px] h-[420px] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 flex flex-col transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-bottom-right ${launcherExpanded
-                                            ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-                                            : "opacity-0 scale-95 translate-y-4 pointer-events-none"
-                                            }`}
-                                    >
-                                        {/* Chat Header */}
-                                        <div
-                                            className="flex items-center gap-3 px-4 py-3 shadow-sm shrink-0"
-                                            style={{ backgroundColor: themeColor }}
-                                        >
-                                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-xl backdrop-blur-sm overflow-hidden">
-                                                {renderAvatar(selectedAvatar)}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="text-sm font-bold text-white">{agentName}</div>
-                                                <div className="text-xs text-white/80">Online • Responds instantly</div>
-                                            </div>
-                                            <button
-                                                onClick={() => setLauncherExpanded(false)}
-                                                className="rounded-full p-1 hover:bg-white/10"
-                                            >
-                                                <X className="h-4 w-4 text-white" />
-                                            </button>
-                                        </div>
-
-                                        {/* Chat Messages */}
-                                        <div className="flex-1 space-y-3 overflow-y-auto bg-zinc-50 p-3 dark:bg-zinc-900">
-                                            {/* Welcome Message */}
-                                            <div className="flex gap-2">
-                                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm dark:bg-zinc-800 overflow-hidden">
-                                                    {renderAvatar(selectedAvatar)}
-                                                </div>
-                                                <div className="max-w-[80%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 shadow-sm dark:bg-zinc-800">
-                                                    <p className="text-xs text-zinc-900 dark:text-zinc-50">
-                                                        {welcomeMessage}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Quick Action Chips */}
-                                            <div className="flex flex-wrap gap-1 pl-8">
-                                                {selectedActions.slice(0, 5).map((actionId) => {
-                                                    const action = availableActions.find((a) => a.id === actionId);
-                                                    return (
-                                                        <button
-                                                            key={actionId}
-                                                            onClick={() => simulateTyping("Processing request...")}
-                                                            className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-zinc-700 transition-all hover:border-violet-300 hover:bg-violet-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                                                            style={{ borderColor: themeColor + "40" }}
-                                                        >
-                                                            {action?.icon} {action?.label}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-
-                                            {/* Typing Indicator */}
-                                            {isTyping && showTypingIndicator && (
-                                                <div className="flex gap-2">
-                                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm dark:bg-zinc-800 overflow-hidden">
-                                                        {renderAvatar(selectedAvatar)}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm bg-white px-3 py-2 shadow-sm dark:bg-zinc-800">
-                                                        <div className="flex gap-1">
-                                                            <div className="h-1.5 w-1.5 animate-bounce rounded-full" style={{ backgroundColor: themeColor, animationDelay: "0ms" }} />
-                                                            <div className="h-1.5 w-1.5 animate-bounce rounded-full" style={{ backgroundColor: themeColor, animationDelay: "150ms" }} />
-                                                            <div className="h-1.5 w-1.5 animate-bounce rounded-full" style={{ backgroundColor: themeColor, animationDelay: "300ms" }} />
-                                                        </div>
-                                                        <span className="text-[10px] text-zinc-500">{typingStatus}</span>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Chat Input */}
-                                        <div className="border-t border-zinc-200 bg-white p-2 shrink-0 dark:border-zinc-800 dark:bg-zinc-900">
-                                            <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-800">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Type your message..."
-                                                    className="flex-1 bg-transparent text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-50"
-                                                    readOnly
-                                                />
-                                                <button
-                                                    className="flex h-6 w-6 items-center justify-center rounded-full transition-all"
-                                                    style={{ backgroundColor: themeColor }}
-                                                >
-                                                    <Send className="h-3 w-3 text-white" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Floating Launcher Button (Collapsed) */}
-                                    <button
-                                        onClick={() => setLauncherExpanded(true)}
-                                        className={`absolute bottom-4 right-4 flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-all duration-300 hover:scale-110 overflow-hidden ${launcherExpanded ? "opacity-0 scale-90 pointer-events-none" : "opacity-100 scale-100 pointer-events-auto"
-                                            }`}
-                                        style={{
-                                            backgroundColor: (launcherStyle === "brand" && brandLogoUrl) || launcherStyle === "agent"
-                                                ? "transparent"
-                                                : themeColor
-                                        }}
-                                    >
-                                        {launcherStyle === "bubble" && <MessageCircle className="h-7 w-7 text-white" />}
-                                        {launcherStyle === "agent" && (
-                                            <img src="/Robot-launcher.png" alt="Agent" className="h-full w-full object-contain" />
-                                        )}
-                                        {launcherStyle === "brand" && brandLogoUrl && (
-                                            <img src={brandLogoUrl} alt="Brand" className="h-full w-full object-cover" />
-                                        )}
-                                        {launcherStyle === "brand" && !brandLogoUrl && (
-                                            <Upload className="h-6 w-6 text-white" />
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Demo Actions */}
-                            <div className="absolute -bottom-12 left-1/2 flex -translate-x-1/2 gap-2">
-                                <button
-                                    onClick={() => simulateTyping("Typing...")}
-                                    className="rounded-lg bg-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-all hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                                >
-                                    Test Typing
-                                </button>
-                                <button
-                                    onClick={() => setLauncherExpanded(!launcherExpanded)}
-                                    className="rounded-lg bg-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-all hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                                >
-                                    {launcherExpanded ? "Collapse" : "Expand"}
-                                </button>
+                    {/* Browser mockup frame */}
+                    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 w-full max-w-sm">
+                        {/* Browser chrome dots */}
+                        <div className="flex items-center gap-1.5 border-b border-zinc-200 bg-zinc-100 px-3 py-2.5 dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                            <div className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+                            <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
+                            <div className="ml-2 h-4 flex-1 rounded bg-white/60 dark:bg-zinc-800 flex items-center px-2">
+                                <span className="text-[9px] text-zinc-400">yoursite.com</span>
                             </div>
                         </div>
-                    )}
 
-                    {/* Mobile Preview */}
-                    {previewMode === "mobile" && (
-                        <div className="relative mt-16">
-                            {/* Phone Frame */}
-                            <div className="relative h-[580px] w-[340px] rounded-[3rem] border-[14px] border-zinc-900 bg-zinc-900 shadow-2xl dark:border-zinc-700">
-                                {/* Notch */}
-                                <div className="absolute left-1/2 top-0 z-10 h-6 w-40 -translate-x-1/2 rounded-b-2xl bg-zinc-900 dark:bg-zinc-700" />
-
-                                {/* Screen */}
-                                <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-white dark:bg-zinc-950">
-                                    {/* Status Bar */}
-                                    <div className="flex h-12 items-center justify-between bg-white px-6 pt-2 dark:bg-zinc-950">
-                                        <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-50">9:41</span>
-                                        <div className="flex items-center gap-1">
-                                            <div className="h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-                                            <div className="h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-                                            <div className="h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-                                        </div>
-                                    </div>
-
-                                    {/* Website Content Background (simulated mobile site) */}
-                                    <div className={`relative h-[calc(100%-3rem)] bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950 ${activePreviewTheme === "dark" ? "dark" : ""}`}>
-                                        {/* Fake mobile website content */}
-                                        <div className="p-4 space-y-3 opacity-40">
-                                            <div className="h-6 w-32 rounded bg-zinc-300 dark:bg-zinc-700" />
-                                            <div className="h-3 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
-                                            <div className="h-3 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
-                                            <div className="mt-4 h-32 rounded-lg bg-zinc-200 dark:bg-zinc-800" />
-                                        </div>
-
-                                        {/* Chat Widget (Expanded) - Full screen inside the phone */}
-                                        <div
-                                            className={`absolute inset-0 overflow-hidden bg-white shadow-2xl dark:bg-zinc-950 flex flex-col transition-all duration-300 ease-out ${launcherExpanded
-                                                ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-                                                : "opacity-0 scale-95 translate-y-4 pointer-events-none"
-                                                }`}
-                                        >
-                                            {/* Chat Header */}
-                                            <div
-                                                className="flex items-center gap-3 px-4 py-3 shadow-sm shrink-0"
-                                                style={{ backgroundColor: themeColor }}
-                                            >
-                                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-xl backdrop-blur-sm overflow-hidden">
-                                                    {renderAvatar(selectedAvatar)}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-bold text-white">{agentName}</div>
-                                                    <div className="text-xs text-white/80">Online • Responds instantly</div>
-                                                </div>
-                                                <button
-                                                    onClick={() => setLauncherExpanded(false)}
-                                                    className="rounded-full p-1 hover:bg-white/10"
-                                                >
-                                                    <X className="h-4 w-4 text-white" />
-                                                </button>
-                                            </div>
-
-                                            {/* Chat Messages */}
-                                            <div className="flex-1 space-y-3 overflow-y-auto bg-zinc-50 p-3 dark:bg-zinc-900">
-                                                {/* Welcome Message */}
-                                                <div className="flex gap-2">
-                                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm dark:bg-zinc-800 overflow-hidden">
-                                                        {renderAvatar(selectedAvatar)}
-                                                    </div>
-                                                    <div className="max-w-[80%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 shadow-sm dark:bg-zinc-800">
-                                                        <p className="text-xs text-zinc-900 dark:text-zinc-50">
-                                                            {welcomeMessage}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Quick Action Chips */}
-                                                <div className="flex flex-wrap gap-1 pl-8">
-                                                    {selectedActions.slice(0, 5).map((actionId) => {
-                                                        const action = availableActions.find((a) => a.id === actionId);
-                                                        return (
-                                                            <button
-                                                                key={actionId}
-                                                                onClick={() => simulateTyping("Processing request...")}
-                                                                className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-zinc-700 transition-all hover:border-violet-300 hover:bg-violet-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                                                                style={{ borderColor: themeColor + "40" }}
-                                                            >
-                                                                {action?.icon} {action?.label}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-
-                                                {/* Typing Indicator */}
-                                                {isTyping && showTypingIndicator && (
-                                                    <div className="flex gap-2">
-                                                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm dark:bg-zinc-800 overflow-hidden">
-                                                            {renderAvatar(selectedAvatar)}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm bg-white px-3 py-2 shadow-sm dark:bg-zinc-800">
-                                                            <div className="flex gap-1">
-                                                                <div className="h-1.5 w-1.5 animate-bounce rounded-full" style={{ backgroundColor: themeColor, animationDelay: "0ms" }} />
-                                                                <div className="h-1.5 w-1.5 animate-bounce rounded-full" style={{ backgroundColor: themeColor, animationDelay: "150ms" }} />
-                                                                <div className="h-1.5 w-1.5 animate-bounce rounded-full" style={{ backgroundColor: themeColor, animationDelay: "300ms" }} />
-                                                            </div>
-                                                            <span className="text-[10px] text-zinc-500">{typingStatus}</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Chat Input */}
-                                            <div className="border-t border-zinc-200 bg-white p-3 shrink-0 dark:border-zinc-800 dark:bg-zinc-900">
-                                                <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Type your message..."
-                                                        className="flex-1 bg-transparent text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-50"
-                                                        readOnly
-                                                    />
-                                                    <button
-                                                        className="flex h-6 w-6 items-center justify-center rounded-full transition-all"
-                                                        style={{ backgroundColor: themeColor }}
-                                                    >
-                                                        <Send className="h-3 w-3 text-white" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Floating Launcher Button (inside the phone screen) */}
-                                        <button
-                                            onClick={() => setLauncherExpanded(true)}
-                                            className={`absolute bottom-4 right-4 flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-all duration-300 hover:scale-110 overflow-hidden ${launcherExpanded ? "opacity-0 scale-90 pointer-events-none" : "opacity-100 scale-100 pointer-events-auto"
-                                                }`}
-                                            style={{
-                                                backgroundColor: (launcherStyle === "brand" && brandLogoUrl) || launcherStyle === "agent"
-                                                    ? "transparent"
-                                                    : themeColor
-                                            }}
-                                        >
-                                            {launcherStyle === "bubble" && <MessageCircle className="h-7 w-7 text-white" />}
-                                            {launcherStyle === "agent" && (
-                                                <img src="/Robot-launcher.png" alt="Agent" className="h-full w-full object-contain" />
-                                            )}
-                                            {launcherStyle === "brand" && brandLogoUrl && (
-                                                <img src={brandLogoUrl} alt="Brand" className="h-full w-full object-cover" />
-                                            )}
-                                            {launcherStyle === "brand" && !brandLogoUrl && (
-                                                <Upload className="h-6 w-6 text-white" />
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Demo Actions */}
-                            <div className="absolute -bottom-12 left-1/2 flex -translate-x-1/2 gap-2">
-                                <button
-                                    onClick={() => simulateTyping("Typing...")}
-                                    className="rounded-lg bg-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-all hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                                >
-                                    Test Typing
-                                </button>
-                                <button
-                                    onClick={() => setLauncherExpanded(!launcherExpanded)}
-                                    className="rounded-lg bg-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-all hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                                >
-                                    {launcherExpanded ? "Collapse" : "Expand"}
-                                </button>
-                            </div>
+                        {/* Real ChatWidget — staticConfig ensures instant reflection */}
+                        <div style={{ height: "560px" }}>
+                            <ChatWidget
+                                className="h-full rounded-none"
+                                staticConfig={liveConfig}
+                            />
                         </div>
-                    )}
+                    </div>
+
+                    <p className="text-center text-[10px] text-zinc-400 dark:text-zinc-600">
+                        Changes reflect instantly as you configure
+                    </p>
                 </div>
             </div>
         </div >
